@@ -1,0 +1,22 @@
+{
+  "name": "lab-02",
+  "version": "1.0.0",
+  "description": "Lab 2: SQLite database and CRUD routes",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "initdb": "node initdb.js"
+  },
+  "keywords": [],
+  "author": "P. Avinash",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.3.0",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^6.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
