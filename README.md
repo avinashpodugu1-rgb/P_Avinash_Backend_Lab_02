@@ -19,6 +19,11 @@ The Express server connects to an embedded SQLite database (`books.db`) and prov
 - **GET Unknown Book (404):** [http://localhost:3000/books/999/](http://localhost:3000/books/999/)
 - **GET Deleted Book Verification (404):** [http://localhost:3000/books/2/](http://localhost:3000/books/2/)
 
+### Live Cloud Deployment (Vercel)
+- **Production Base URL:** [https://lab-02-ten.vercel.app/](https://lab-02-ten.vercel.app/)
+- **GET All Books:** [https://lab-02-ten.vercel.app/books/](https://lab-02-ten.vercel.app/books/)
+- **GET Single Book (ID 3):** [https://lab-02-ten.vercel.app/books/3/](https://lab-02-ten.vercel.app/books/3/)
+
 ### Live Cloud Deployment (Render)
 - **Base URL:** [https://p-avinash-backend-lab-02.onrender.com/](https://p-avinash-backend-lab-02.onrender.com/)
 - **GET All Books:** [https://p-avinash-backend-lab-02.onrender.com/books/](https://p-avinash-backend-lab-02.onrender.com/books/)
