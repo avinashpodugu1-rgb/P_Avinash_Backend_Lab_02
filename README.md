@@ -3,7 +3,7 @@
 **Name:** P. Avinash · **Registration number:** 252U1R1194 · **Section:** CSE-2D  
 **Faculty:** Sai siva teja, om prakash reddy **Course:** Backend Development Fundamentals (Year II Term II)
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/avinashpodugu1-rgb/P_Avinash_Backend_Lab)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/avinashpodugu1-rgb/P_Avinash_Backend_Lab_02)
 
 ---
 
@@ -20,13 +20,13 @@ The Express server connects to an embedded SQLite database (`books.db`) and prov
 - **GET Deleted Book Verification (404):** [http://localhost:3000/books/2/](http://localhost:3000/books/2/)
 
 ### Live Cloud Deployment (Vercel)
+- **Vercel Project Dashboard:** [https://vercel.com/avinashpodugu1-rgbs-projects/lab-02](https://vercel.com/avinashpodugu1-rgbs-projects/lab-02)
 - **Production Base URL:** [https://lab-02-ten.vercel.app/](https://lab-02-ten.vercel.app/)
 - **GET All Books:** [https://lab-02-ten.vercel.app/books/](https://lab-02-ten.vercel.app/books/)
 - **GET Single Book (ID 3):** [https://lab-02-ten.vercel.app/books/3/](https://lab-02-ten.vercel.app/books/3/)
-
-### Live Cloud Deployment (Render)
-- **Base URL:** [https://p-avinash-backend-lab-02.onrender.com/](https://p-avinash-backend-lab-02.onrender.com/)
-- **GET All Books:** [https://p-avinash-backend-lab-02.onrender.com/books/](https://p-avinash-backend-lab-02.onrender.com/books/)
+- **GET Single Book (ID 1):** [https://lab-02-ten.vercel.app/books/1/](https://lab-02-ten.vercel.app/books/1/)
+- **GET Unknown Book (404):** [https://lab-02-ten.vercel.app/books/999/](https://lab-02-ten.vercel.app/books/999/)
+- **GET Deleted Book Verification (404):** [https://lab-02-ten.vercel.app/books/2/](https://lab-02-ten.vercel.app/books/2/)
 
 ---
 
@@ -34,13 +34,18 @@ The Express server connects to an embedded SQLite database (`books.db`) and prov
 
 ```text
 lab-02/
-├── index.js                         # Express application & initializeDBAndServer()
+├── api/
+│   └── index.js                     # Vercel serverless function entry point
+├── index.js                         # Express application & database logic
 ├── schema.sql                       # Database table definition & initial 9 seed records
 ├── initdb.js                        # Database initialization and reset script
 ├── books.db                         # SQLite database file storing book records
+├── sql-wasm.wasm                    # WebAssembly SQLite binary for serverless runtime
+├── vercel.json                      # Vercel routing, rewrites & asset bundling configuration
 ├── package.json                     # Project configuration, dependencies & scripts
 ├── package-lock.json                # Locked dependency tree
-├── .gitignore                       # Ignores node_modules/ and .env
+├── .gitignore                       # Ignores node_modules/, .env, and .vercel
+├── .vercelignore                    # Ignores node_modules/ and .git during deployments
 ├── README.md                        # Lab documentation, instructions & viva answers
 └── screenshots/                     # Request, response, and database proof captures
     ├── 00-root-home.png             # GET / (200 OK - API overview)
@@ -330,4 +335,4 @@ Initial seed records (9 books):
 - [x] `books.db` verified via SQLite query showing persistent updates
 - [x] Actual browser screenshots added to `screenshots/` and embedded in `README.md`
 - [x] `.gitignore` configured to ignore `node_modules/` and `.env`
-- [x] Configured for Render deployment via `render.yaml`
+- [x] Configured for Vercel deployment via `vercel.json` and `api/index.js`
