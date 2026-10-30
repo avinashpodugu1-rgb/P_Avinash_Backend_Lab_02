@@ -22,6 +22,28 @@ const getSourceDbPath = () => {
   return path.join(__dirname, 'books.db');
 };
 
+// Resolve sql-wasm.wasm binary buffer
+const getWasmBinary = () => {
+  const candidates = [
+    path.join(__dirname, 'sql-wasm.wasm'),
+    path.join(__dirname, '..', 'sql-wasm.wasm'),
+    path.join(process.cwd(), 'sql-wasm.wasm'),
+    path.join(process.cwd(), 'lab-02', 'sql-wasm.wasm'),
+    path.join(__dirname, 'node_modules/sql.js/dist/sql-wasm.wasm'),
+    path.join(process.cwd(), 'node_modules/sql.js/dist/sql-wasm.wasm')
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) {
+      try {
+        return fs.readFileSync(c);
+      } catch (e) {
+        console.error('Error reading wasm binary:', e.message);
+      }
+    }
+  }
+  return null;
+};
+
 // Database wrapper for sql.js (WebAssembly SQLite)
 class SqlJsDatabase {
   constructor(filePath, SQL) {
@@ -102,7 +124,8 @@ const getDB = async () => {
       // In Vercel / serverless environment, use sql.js (WebAssembly) to avoid GLIBC native binary issues
       if (isVercel) {
         const initSqlJs = require('sql.js');
-        const SQL = await initSqlJs();
+        const wasmBinary = getWasmBinary();
+        const SQL = await initSqlJs(wasmBinary ? { wasmBinary } : {});
         db = new SqlJsDatabase(targetDbPath, SQL);
         return db;
       }
@@ -116,7 +139,8 @@ const getDB = async () => {
       } catch (err) {
         console.warn('sqlite3 failed, falling back to sql.js (WASM):', err.message);
         const initSqlJs = require('sql.js');
-        const SQL = await initSqlJs();
+        const wasmBinary = getWasmBinary();
+        const SQL = await initSqlJs(wasmBinary ? { wasmBinary } : {});
         db = new SqlJsDatabase(targetDbPath, SQL);
         return db;
       }
