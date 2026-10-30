@@ -34,8 +34,6 @@ The Express server connects to an embedded SQLite database (`books.db`) and prov
 
 ```text
 lab-02/
-├── api/
-│   └── index.js                     # Vercel serverless function entry point
 ├── index.js                         # Express application & database logic
 ├── schema.sql                       # Database table definition & initial 9 seed records
 ├── initdb.js                        # Database initialization and reset script
@@ -335,4 +333,4 @@ Initial seed records (9 books):
 - [x] `books.db` verified via SQLite query showing persistent updates
 - [x] Actual browser screenshots added to `screenshots/` and embedded in `README.md`
 - [x] `.gitignore` configured to ignore `node_modules/` and `.env`
-- [x] Configured for Vercel deployment via `vercel.json` and `api/index.js`
+- [x] Configured for Vercel deployment via `vercel.json` and `index.js`
