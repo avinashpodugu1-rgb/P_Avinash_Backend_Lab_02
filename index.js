@@ -1,8 +1,6 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const sqlite3 = require('sqlite3');
-const { open } = require('sqlite');
 
 const app = express();
 app.use(express.json());
@@ -10,32 +8,75 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 const isVercel = Boolean(process.env.VERCEL || process.env.NOW_REGION || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
-// Resolve SQLite database path with fallback for serverless environment (/tmp)
-const getDbPath = () => {
-  if (isVercel) {
-    const tmpDbPath = path.join('/tmp', 'books.db');
-    if (!fs.existsSync(tmpDbPath)) {
-      const candidates = [
-        path.join(__dirname, 'books.db'),
-        path.join(process.cwd(), 'books.db'),
-        path.join(process.cwd(), 'lab-02', 'books.db'),
-        path.join(__dirname, '..', 'books.db')
-      ];
-      for (const candidate of candidates) {
-        if (fs.existsSync(candidate)) {
-          try {
-            fs.copyFileSync(candidate, tmpDbPath);
-            break;
-          } catch (e) {
-            console.error('Error copying db to /tmp:', e);
-          }
-        }
-      }
-    }
-    return tmpDbPath;
+// Resolve source books.db path
+const getSourceDbPath = () => {
+  const candidates = [
+    path.join(__dirname, 'books.db'),
+    path.join(process.cwd(), 'books.db'),
+    path.join(process.cwd(), 'lab-02', 'books.db'),
+    path.join(__dirname, '..', 'books.db')
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
   }
   return path.join(__dirname, 'books.db');
 };
+
+// Database wrapper for sql.js (WebAssembly SQLite)
+class SqlJsDatabase {
+  constructor(filePath, SQL) {
+    this.filePath = filePath;
+    this.SQL = SQL;
+    if (fs.existsSync(filePath)) {
+      const buf = fs.readFileSync(filePath);
+      this.db = new SQL.Database(buf);
+    } else {
+      this.db = new SQL.Database();
+    }
+  }
+
+  save() {
+    try {
+      const data = this.db.export();
+      fs.writeFileSync(this.filePath, Buffer.from(data));
+    } catch (e) {
+      console.error('Error saving db:', e.message);
+    }
+  }
+
+  async all(sql, params = []) {
+    const stmt = this.db.prepare(sql);
+    if (params && params.length > 0) stmt.bind(params);
+    const rows = [];
+    while (stmt.step()) rows.push(stmt.getAsObject());
+    stmt.free();
+    return rows;
+  }
+
+  async get(sql, params = []) {
+    const stmt = this.db.prepare(sql);
+    if (params && params.length > 0) stmt.bind(params);
+    let row = undefined;
+    if (stmt.step()) row = stmt.getAsObject();
+    stmt.free();
+    return row;
+  }
+
+  async run(sql, params = []) {
+    this.db.run(sql, params);
+    const lastIDRes = this.db.exec('SELECT last_insert_rowid() AS id;');
+    const lastID = lastIDRes[0]?.values[0]?.[0] || 0;
+    const changesRes = this.db.exec('SELECT changes() AS ch;');
+    const changes = changesRes[0]?.values[0]?.[0] || 0;
+    this.save();
+    return { lastID, changes };
+  }
+
+  async exec(sql) {
+    this.db.exec(sql);
+    this.save();
+  }
+}
 
 let db = null;
 let dbPromise = null;
@@ -44,28 +85,41 @@ const getDB = async () => {
   if (db) return db;
   if (!dbPromise) {
     dbPromise = (async () => {
-      const resolvedPath = getDbPath();
-      const database = await open({ filename: resolvedPath, driver: sqlite3.Database });
+      const sourceDb = getSourceDbPath();
+      let targetDbPath = sourceDb;
 
-      // If table does not exist (e.g. fresh /tmp), initialize table & seed
-      const tableCheck = await database.get("SELECT name FROM sqlite_master WHERE type='table' AND name='book';");
-      if (!tableCheck) {
-        const schemaCandidates = [
-          path.join(__dirname, 'schema.sql'),
-          path.join(process.cwd(), 'schema.sql'),
-          path.join(process.cwd(), 'lab-02', 'schema.sql'),
-          path.join(__dirname, '..', 'schema.sql')
-        ];
-        for (const schemaPath of schemaCandidates) {
-          if (fs.existsSync(schemaPath)) {
-            const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-            await database.exec(schemaSql);
-            break;
+      if (isVercel) {
+        targetDbPath = path.join('/tmp', 'books.db');
+        try {
+          if (!fs.existsSync(targetDbPath) && fs.existsSync(sourceDb)) {
+            fs.copyFileSync(sourceDb, targetDbPath);
           }
+        } catch (e) {
+          console.error('Copy to /tmp error:', e);
         }
       }
-      db = database;
-      return db;
+
+      // In Vercel / serverless environment, use sql.js (WebAssembly) to avoid GLIBC native binary issues
+      if (isVercel) {
+        const initSqlJs = require('sql.js');
+        const SQL = await initSqlJs();
+        db = new SqlJsDatabase(targetDbPath, SQL);
+        return db;
+      }
+
+      // In local environment, try sqlite3 first, fallback to sql.js
+      try {
+        const sqlite3 = require('sqlite3');
+        const { open } = require('sqlite');
+        db = await open({ filename: targetDbPath, driver: sqlite3.Database });
+        return db;
+      } catch (err) {
+        console.warn('sqlite3 failed, falling back to sql.js (WASM):', err.message);
+        const initSqlJs = require('sql.js');
+        const SQL = await initSqlJs();
+        db = new SqlJsDatabase(targetDbPath, SQL);
+        return db;
+      }
     })();
   }
   return dbPromise;
